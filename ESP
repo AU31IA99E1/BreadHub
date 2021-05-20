@@ -1,1 +1,354 @@
+local esp = {}
 
+---------------------------------------------------------------------------------------- << Vars
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local TextService = game:GetService("TextService")
+
+local lplr = Players.LocalPlayer
+local lChar = lplr.Character or lplr.CharacterAdded:Wait()
+local mouse = lplr:GetMouse()
+local camera = workspace.CurrentCamera
+local screenSize = camera.ViewportSize
+
+local playerData = {}
+
+local bodyParts = {
+    ["Head"] = {"Head"};
+    ["Torso"] = {"UpperTorso","LowerTorso"};
+    ["Left Arm"] = {"LeftUpperArm","LeftLowerArm","LeftHand"};
+    ["Right Arm"] = {"RightUpperArm","RightLowerArm","RightHand"};
+    ["Left Leg"] = {"LeftUpperLeg","LeftLowerLeg","LeftFoot"};
+    ["Right Leg"] = {"RightUpperLeg","RightLowerLeg","RightFoot"};
+}
+
+---------------------------------------------------------------------------------------- << Functions
+
+local function plrHasChar(plr,aliveCheck)
+    local pass = false
+    if plr.Character and plr.Character ~= nil and plr.Character:FindFirstChild("Humanoid") then
+        
+    end
+    return false
+end
+
+local function setTable(t,i,v)
+    t[i] = v
+end
+
+local function newDrawing(type,properties)
+    local Drawing = Drawing.new(type)
+    for i,v in next,properties do
+        pcall(setTable,Drawing,i,v)
+    end
+    return Drawing
+end
+
+local function playerCheck(plr)
+    local lol = true
+
+    if plr ~= lplr and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character.Humanoid.Health > 0 then
+        
+    else
+        lol = false
+    end
+
+    return lol
+end
+
+local function isCharOnScreen(char)
+    local onScreen = false
+    for i,v in next, char:GetChildren() do
+        if v:IsA("BasePart") then
+            local pos,vis = camera:WorldToViewportPoint(v.Position)
+            if vis then
+                onScreen = true
+            end
+        end
+    end
+    return onScreen
+end
+
+---------------------------------------------------------------------------------------- << ESP Stuffs
+
+------------------------------------------------------------------ << Create
+
+function esp.Create(plr)
+
+    ----------------------------------------------------------
+
+    if playerData[plr] ~= nil then
+        pcall(function()
+            playerData[plr]:Remove()
+        end)
+        playerData[plr] = nil
+    end
+
+    ----------------------------------------------------------
+
+    local data = {}
+    data.color = Color3.new(1,1,1)
+    data.outlineColor = Color3.new(0,0,0)
+    data.healthColor = Color3.new(0,1,0)
+    data.healthBackgroundColor = Color3.new(1,0,0)
+    data.thickness = 1.25
+    data.outline = true
+    data.outlineTracer = false
+    data.outlineThickness = .85
+    data.chams1Transparency = .35
+    data.chams2Transparency = .85
+    data.chams1Color = Color3.new(0,1,0)
+    data.chams2Color = Color3.new(1,0,1)
+
+    data.boxVis = true
+    data.healthVis = true
+    data.tracerVis = true
+    data.chamsVis = true
+
+    data["boxOutline"] = newDrawing("Square",{
+        Visible = false;
+    })
+    data["box"] = newDrawing("Square",{
+        Visible = false;
+    })
+
+    data["healthBarBackground"] = newDrawing("Square",{
+        Visible = false;
+        Filled = true;
+    })
+
+    data["healthBarIndicator"] = newDrawing("Square",{
+        Visible = false;
+        Filled = true;
+    })
+
+    data["tracerOutline"] = newDrawing("Line",{
+        Visible = false;
+        From = Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y);
+    })
+
+    data["tracer"] = newDrawing("Line",{
+        Visible = false;
+        From = Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y);
+    })
+
+    data["chams"] = { color1 = Color3.new(0,0,0); chams1Insts = {}; chams2Insts = {}; }
+    function data.chams.Update()
+        for _,v in next, data.chams.chams1Insts do
+            v.Transparency = data.chams1Transparency
+            v.Color3 = data.chams1Color
+        end
+        for _,v in next, data.chams.chams2Insts do
+            v.Transparency = data.chams2Transparency
+            v.Color3 = data.chams2Color
+        end
+    end
+    function data.chams.SetVis(bool)
+        for _,v in next, data.chams.chams1Insts do
+            v.Visible = bool
+        end
+        for _,v in next, data.chams.chams2Insts do
+            v.Visible = bool
+        end
+    end
+
+    function data.chams:Create(char)
+        if char ~= nil then
+            local hum = char:WaitForChild("Humanoid")
+            local function create(part)
+                local p1
+                local p2
+                if part.Name == "Head" then
+                    p1 = Instance.new("CylinderHandleAdornment")
+                    p2 = Instance.new("CylinderHandleAdornment")
+                    p1.CFrame = p1.CFrame * CFrame.Angles(math.rad(90),0,math.rad(90))
+                    p2.CFrame = p2.CFrame * CFrame.Angles(math.rad(90),0,math.rad(90))
+                    p1.Angle = 360
+                    p1.Radius = .65
+                    p1.Height = 1.15
+                    p2.Angle = 360
+                    p2.Radius = .655
+                    p2.Height = 1.2
+                else
+                    p1 = Instance.new("BoxHandleAdornment")
+                    p2 = Instance.new("BoxHandleAdornment")
+                    p1.Size = part.Size + Vector3.new(.1,.1,.1)
+                    p2.Size = p1.Size + Vector3.new(.05,.05,.05)
+                end
+                p1.Visible = true
+                p2.Visible = true
+                p1.ZIndex = 1
+                p2.ZIndex = 2
+                p1.Adornee = part
+                p2.Adornee = part
+                p1.Parent = part
+                p2.Parent = part
+                p1.Transparency = data.chams1Transparency
+                p2.Transparency = data.chams2Transparency
+                p1.Color3 = data.chams1Color
+                p2.Color3 = data.chams2Color
+                p2.AlwaysOnTop = true
+                data.chams.chams1Insts[#data.chams.chams1Insts+1] = p1
+                data.chams.chams2Insts[#data.chams.chams2Insts+1] = p2
+            end
+            local humType = hum.RigType
+            for _,part in next, char:GetChildren() do
+                if part:IsA("BasePart") then
+                    for r6name,R15names in next, bodyParts do
+                        if humType == Enum.HumanoidRigType.R15 then
+                            for _,r15name in next, R15names do
+                                if part.Name == r15name then
+                                    create(part)
+                                end
+                            end
+                        elseif humType == Enum.HumanoidRigType.R6 then
+                            if part.Name == r6name then
+                                create(part)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if plr.Character ~= nil then
+        coroutine.wrap(function()
+            data.chams:Create(plr.Character)
+        end)()
+    end
+    
+    plr.CharacterAdded:Connect(function(char)
+        coroutine.wrap(function()
+            data.chams:Create(char)
+        end)()
+    end)
+
+    playerData[plr] = data
+
+    ----------------------------------------------------------
+
+    local function setVis(bool)
+        data.box.Visible = data.boxVis == true and bool or false
+        data.healthBarBackground.Visible = data.healthVis == true and bool or false
+        data.healthBarIndicator.Visible = data.healthVis == true and bool or false
+        data.tracer.Visible = data.tracerVis == true and bool or false
+        data.boxOutline.Visible = (data.outline == true and data.tracerVis == true or false) and bool or false
+        data.tracerOutline.Visible = (data.outlineTracer == true and data.tracerVis == true or false) and bool or false
+        pcall(data.chams.SetVis,bool)
+    end
+
+    ----------------------------------------------------------
+
+    local c
+
+    coroutine.wrap(function ()
+        c = RunService.RenderStepped:Connect(function()
+            if playerCheck(plr) then
+                local char = plr.Character
+                local hum = char:WaitForChild("Humanoid")
+                local HRP = char:WaitForChild("HumanoidRootPart")
+                local Head = char:WaitForChild("Head")
+
+                local health,maxHealth = hum.Health,hum.MaxHealth
+                local screenPos, onScreen = camera:WorldToViewportPoint(HRP.Position)
+                if isCharOnScreen(char) then
+    
+                    local boxTop = camera:WorldToViewportPoint(Head.Position + Vector3.new(0,.75))
+                    local boxBottom = camera:WorldToViewportPoint(HRP.Position - Vector3.new(0,4,0))
+                    local top
+                    local bottom
+    
+                    ---------------------------- << Box
+                    data.box.Size = Vector2.new(2500 / screenPos.Z, 5000 / screenPos.Z)
+                    data.box.Position = Vector2.new(screenPos.X - data.box.Size.X / 2, screenPos.Y - data.box.Size.Y / 2 )
+                    data.box.Color = data.color
+                    data.box.Thickness = data.thickness
+    
+                    data.boxOutline.Size = data.box.Size
+                    data.boxOutline.Position = data.box.Position
+                    data.boxOutline.Color = data.outlineColor
+                    data.boxOutline.Thickness = data.box.Thickness + (data.outlineThickness * 2)
+    
+                    top = data.box.Position + Vector2.new(data.box.Size.X / 2,0)
+                    bottom = top + Vector2.new(0,data.box.Size.Y)
+                    
+                    ---------------------------- << Health
+                    data.healthBarBackground.Size = Vector2.new(math.clamp(150 / screenPos.Z,1,math.huge), data.box.Size.Y)
+                    data.healthBarBackground.Position = data.box.Position - Vector2.new(data.healthBarBackground.Size.X * 2,0)
+                    data.healthBarBackground.Color = data.healthBackgroundColor
+                    
+                    local healthSize = (((health - 0) * (data.healthBarBackground.Size.Y - 0)) / (maxHealth - 0)) + 0
+                    local healthPosition = (data.healthBarBackground.Size.Y - healthSize)
+                    
+                    data.healthBarIndicator.Size = Vector2.new(data.healthBarBackground.Size.X,healthSize)
+                    data.healthBarIndicator.Position = data.healthBarBackground.Position + Vector2.new(0,healthPosition)
+                    data.healthBarIndicator.Color = data.healthColor
+
+                    ---------------------------- << Tracers
+                    data.tracer.To = bottom
+                    data.tracer.Color = data.color
+                    data.tracer.Thickness = data.thickness
+
+                    data.tracerOutline.To = bottom
+                    data.tracerOutline.Color = data.outlineColor
+                    data.tracerOutline.Thickness = data.tracer.Thickness + (data.outlineThickness * 2)
+
+                    pcall(data.chams.Update)
+                    pcall(setVis,true)
+                else
+                    pcall(setVis,false)
+                end
+            else
+                pcall(setVis,false)
+            end
+        end)
+    end)()
+
+    ----------------------------------------------------------
+    
+    function data:Remove()
+        c:Disconnect()
+        data.boxOutline:Remove()
+        data.box:Remove()
+        data.healthBarBackground:Remove()
+        data.healthBarIndicator:Remove()
+        data.tracerOutline:Remove()
+        data.tracer:Remove()
+        data = nil
+    end
+
+    ----------------------------------------------------------
+end
+
+------------------------------------------------------------------ << Get / Remove
+
+function esp:GetPlayer(plr)
+    if type(plr) == "string" and Players:FindFirstChild(plr) then return playerData[Players:FindFirstChild(plr)] end
+    return playerData[plr]
+end
+
+function esp:Remove(plr)
+    pcall(playerData[plr].Remove)
+end
+
+------------------------------------------------------------------ << Updating
+
+for _, plr in next, Players:GetPlayers() do
+    esp.Create(plr)
+end
+Players.PlayerAdded:Connect(esp.Create)
+Players.PlayerRemoving:Connect(esp.Remove)
+
+------------------------------------------------------------------ << Return
+
+print("ESP Finished Loading")
+
+return esp
+
+----------------------------------------------------------------------------
