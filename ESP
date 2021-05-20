@@ -1,4 +1,5 @@
 local esp = {}
+local ready = false
 
 ---------------------------------------------------------------------------------------- << Vars
 
@@ -76,6 +77,30 @@ end
 
 ---------------------------------------------------------------------------------------- << ESP Stuffs
 
+local defaultProperties = {
+    color = Color3.new(1,1,1);
+    outlineColor = Color3.new(0,0,0);
+    healthColor = Color3.new(0,1,0);
+    healthBackgroundColor = Color3.new(1,0,0);
+    thickness = 1.25;
+    outline = true;
+    outlineTracer = false;
+    outlineThickness = .85;
+    chams1Transparency = .35;
+    chams2Transparency = .85;
+    chams1Color = Color3.new(0,1,0);
+    chams2Color = Color3.new(1,0,1);
+    boxVis = true;
+    healthVis = true;
+    tracerVis = true;
+    chamsVis = true;
+}
+
+local startupProperties = {}
+for i,v in next, defaultProperties do
+    pcall(setTable,startupProperties,i,v)
+end
+
 ------------------------------------------------------------------ << Create
 
 function esp.Create(plr)
@@ -92,23 +117,9 @@ function esp.Create(plr)
     ----------------------------------------------------------
 
     local data = {}
-    data.color = Color3.new(1,1,1)
-    data.outlineColor = Color3.new(0,0,0)
-    data.healthColor = Color3.new(0,1,0)
-    data.healthBackgroundColor = Color3.new(1,0,0)
-    data.thickness = 1.25
-    data.outline = true
-    data.outlineTracer = false
-    data.outlineThickness = .85
-    data.chams1Transparency = .35
-    data.chams2Transparency = .85
-    data.chams1Color = Color3.new(0,1,0)
-    data.chams2Color = Color3.new(1,0,1)
-
-    data.boxVis = true
-    data.healthVis = true
-    data.tracerVis = true
-    data.chamsVis = true
+    for i,v in next, startupProperties do
+        pcall(setTable,data,i,v)
+    end
 
     data["boxOutline"] = newDrawing("Square",{
         Visible = false;
@@ -323,10 +334,16 @@ function esp.Create(plr)
         data = nil
     end
 
+    function data:resetToStartup()
+        for i,v in next, startupProperties do
+            pcall(setTable,data,i,v)
+        end
+    end
+
     ----------------------------------------------------------
 end
 
------------------------------------------------------------------- << Get / Remove
+------------------------------------------------------------------ << Other
 
 function esp:GetPlayer(plr)
     if type(plr) == "string" and Players:FindFirstChild(plr) then return playerData[Players:FindFirstChild(plr)] end
@@ -335,6 +352,20 @@ end
 
 function esp:Remove(plr)
     pcall(playerData[plr].Remove)
+end
+
+function esp:setStartupVal(i,v)
+    if startupProperties[i] ~= nil then
+        pcall(setTable,startupProperties,i,v)
+    end
+end
+
+function esp:resetToStartup(plr)
+    pcall(function() playerData[plr]:resetToStartup() end)
+end
+
+function esp:resetAllToStartup()
+    for i,v in next, playerData do pcall(function() v:resetToStartup() end) end
 end
 
 ------------------------------------------------------------------ << Updating
@@ -347,8 +378,7 @@ Players.PlayerRemoving:Connect(esp.Remove)
 
 ------------------------------------------------------------------ << Return
 
-print("ESP Finished Loading")
-
+ready = true
 return esp
 
 ----------------------------------------------------------------------------
