@@ -355,8 +355,14 @@ function esp:Remove(plr)
 end
 
 function esp:setStartupVal(i,v)
+    if startupProperties[i] ~= nil then pcall(setTable,startupProperties,i,v) end
+end
+
+function esp:setAllVal(i,v)
     if startupProperties[i] ~= nil then
-        pcall(setTable,startupProperties,i,v)
+        for _,v2 in next, playerData do
+            pcall(setTable,v2,i,v)
+        end
     end
 end
 
